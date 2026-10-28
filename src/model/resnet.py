@@ -53,7 +53,7 @@ class ResNet(nn.Module):
             layers = [ResidualBlock(in_channels, out_channels, stride)]
             for _ in range(1, n_blocks):
                 layers.append(ResidualBlock(out_channels, out_channels, stride=1))
-                return nn.Sequential(*layers)
+            return nn.Sequential(*layers)
 
     def _init_weights(self):
             for m in self.modules():
