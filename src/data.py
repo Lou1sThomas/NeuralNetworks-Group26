@@ -27,17 +27,19 @@ def label_from_file(path):
 
 
 class FireSmokeDataset(Dataset):
-    def __init__(self, split, transform):
-        img_dir = os.path.join(DATA_ROOT, split, "images")
-        lbl_dir = os.path.join(DATA_ROOT, split, "labels")
-        assert os.path.isdir(img_dir), f"Missing {img_dir}; contents of DATA_ROOT: {os.listdir(DATA_ROOT)}"
-
+    def __init__(self, splits, transform):
+        if isinstance(splits, str):          # allow a single folder name, e.g. "test"
+            splits = [splits]
         self.samples = []
-        for name in sorted(os.listdir(img_dir)):
-            stem = os.path.splitext(name)[0]
-            lbl_path = os.path.join(lbl_dir, stem + ".txt")
-            label = label_from_file(lbl_path) if os.path.exists(lbl_path) else 3
-            self.samples.append((os.path.join(img_dir, name), label))
+        for split in splits:                 # e.g. ["train", "val"]: pool both folders
+            img_dir = os.path.join(DATA_ROOT, split, "images")
+            lbl_dir = os.path.join(DATA_ROOT, split, "labels")
+            assert os.path.isdir(img_dir), f"Missing {img_dir}; contents of DATA_ROOT: {os.listdir(DATA_ROOT)}"
+            for name in sorted(os.listdir(img_dir)):
+                stem = os.path.splitext(name)[0]
+                lbl_path = os.path.join(lbl_dir, stem + ".txt")
+                label = label_from_file(lbl_path) if os.path.exists(lbl_path) else 3
+                self.samples.append((os.path.join(img_dir, name), label))
         self.transform = transform
 
     def __len__(self):
@@ -65,9 +67,9 @@ def get_loaders(batch_size, augment=True, num_workers=4, seed=42, val_frac=0.15)
         norm,
     ]) if augment else eval_tf
 
-    # two views of the same train folder: augmented for training, clean for validation
-    train_full = FireSmokeDataset("train", train_tf)
-    val_full = FireSmokeDataset("train", eval_tf)
+    # two views of the pooled train + val folders: augmented for training, clean for validation
+    train_full = FireSmokeDataset(["train", "val"], train_tf)
+    val_full = FireSmokeDataset(["train", "val"], eval_tf)
 
     idx = list(range(len(train_full)))
     random.Random(seed).shuffle(idx)
